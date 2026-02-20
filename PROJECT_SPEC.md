@@ -218,8 +218,20 @@ State-transition example (2-second re-check interval, threshold `0.65`, misses r
 
 If user begins speaking while TTS is active:
 
-* Immediately stop TTS playback
-* Resume listening
+* Immediately stop TTS playback with a maximum interruption latency of **<= 300 ms** from VAD speech-start detection to audible playback halt.
+* Any queued/buffered TTS chunks not yet played must be **dropped** (do not drain stale response audio after interruption).
+* The interrupted assistant response is **discarded** (non-resumable); the next turn should be generated from fresh ASR/LLM input.
+* Resume listening immediately after stop.
+
+Acceptance test scenario (barge-in timing):
+
+* `t=0 ms`: Assistant starts speaking response chunk 1.
+* `t=900 ms`: Response chunks 2 and 3 are already queued in the audio buffer.
+* `t=1200 ms`: User speech starts and VAD flags speech start.
+* `t=1460 ms`: TTS playback is fully halted (`260 ms` interruption latency, passes `<= 300 ms` target).
+* `t=1465 ms`: Queued chunks 2 and 3 are dropped and never played.
+* `t=1500 ms`: System is back in listening/ASR capture state for the user utterance.
+* Expected result: no further audio from the interrupted response is heard, and no resume of the prior response occurs.
 
 ---
 
