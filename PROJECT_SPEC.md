@@ -139,6 +139,23 @@ If motion but no person/vehicle:
 * Speak `say`
 * Return to STANDBY
 
+Speech in `ANNOUNCE` mode is allowed only when all gating checks pass after a non-person/vehicle motion event:
+
+1. Current local time is outside configured quiet hours (`QUIET_HOURS_START` → `QUIET_HOURS_END`).
+2. Top detected non-person object confidence is at least `ANNOUNCE_MIN_CONFIDENCE` (default: `0.60`).
+3. At least one of the following is true:
+
+   * The same object class was detected in 2 events within `ANNOUNCE_REPEAT_WINDOW_SECONDS` (default: `30` seconds), or
+   * The LLM response priority is `high`.
+
+If any gating check fails, skip TTS output, log the reason, and return to `STANDBY` silently.
+
+Expected behavior examples:
+
+* **Daytime:** Motion at 14:20 with `cat (0.82)` detected twice in 20 seconds → gating passes, system speaks the `say` text, then returns to `STANDBY`.
+* **Nighttime:** Motion at 02:10 with `dog (0.91)` and normal priority, but within quiet hours → no speech; event is logged and system returns to `STANDBY`.
+* **Low confidence:** Motion at 16:45 with `unknown (0.41)` below threshold → no speech even if outside quiet hours; event is logged and system returns to `STANDBY`.
+
 ---
 
 ### CONVERSATION Mode
@@ -193,6 +210,8 @@ MOTION_AREA_THRESHOLD=
 COOLDOWN_SECONDS=
 QUIET_HOURS_START=
 QUIET_HOURS_END=
+ANNOUNCE_MIN_CONFIDENCE=
+ANNOUNCE_REPEAT_WINDOW_SECONDS=
 ```
 
 All thresholds must be configurable.
