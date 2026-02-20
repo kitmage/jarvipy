@@ -162,6 +162,15 @@ Expected behavior examples:
 
 Triggered only if person or vehicle detected.
 
+Presence policy (must be configurable):
+
+* `CONVERSATION_PRESENCE_CONFIDENCE_THRESHOLD` (default: `0.65`) is the minimum confidence for counting a `person` or vehicle detection as present.
+* `CONVERSATION_ABSENCE_MISSES_REQUIRED` (default: `3`) is the number of consecutive presence re-checks below threshold before counting the scene as absent.
+* `CONVERSATION_KEEPALIVE_CLASS_MODE` controls keep-alive behavior:
+
+  * `person_or_vehicle` (default): any qualifying person or vehicle detection keeps conversation alive.
+  * `person_only`: only qualifying person detections keep conversation alive; vehicles alone do not.
+
 Steps:
 
 1. Speak:
@@ -180,7 +189,23 @@ Steps:
 4. Presence monitoring:
 
    * Re-check camera every 2 seconds
-   * If no person/vehicle for 20 seconds → exit
+   * A re-check counts as **present** only when detection confidence meets `CONVERSATION_PRESENCE_CONFIDENCE_THRESHOLD` and matches `CONVERSATION_KEEPALIVE_CLASS_MODE`
+   * Count absence only after `CONVERSATION_ABSENCE_MISSES_REQUIRED` consecutive non-qualifying re-checks
+   * Start the 20-second absence timer only after absence is counted
+   * Any qualifying re-check while timer is running resets absence state and clears the 20-second timer
+   * If counted-absent state lasts 20 seconds → exit
+
+State-transition example (2-second re-check interval, threshold `0.65`, misses required `3`, mode `person_or_vehicle`):
+
+* `t=0s` person `0.78` → present, timer not running.
+* `t=2s` none detected → miss #1.
+* `t=4s` bicycle `0.72` → present again, miss count reset.
+* `t=6s` car `0.60` (below threshold) → miss #1.
+* `t=8s` none → miss #2.
+* `t=10s` none → miss #3, absence is now counted, 20-second timer starts.
+* `t=18s` person `0.81` → timer resets and miss count clears (conversation continues).
+* `t=20s`, `22s`, `24s` none → miss #3 again at `24s`, timer restarts.
+* No qualifying detections through `t=44s` → 20 seconds elapsed since counted absence, exit conversation.
 
 5. On exit:
 
@@ -212,6 +237,9 @@ QUIET_HOURS_START=
 QUIET_HOURS_END=
 ANNOUNCE_MIN_CONFIDENCE=
 ANNOUNCE_REPEAT_WINDOW_SECONDS=
+CONVERSATION_PRESENCE_CONFIDENCE_THRESHOLD=
+CONVERSATION_ABSENCE_MISSES_REQUIRED=
+CONVERSATION_KEEPALIVE_CLASS_MODE=person_or_vehicle
 ```
 
 All thresholds must be configurable.
