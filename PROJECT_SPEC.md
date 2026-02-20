@@ -295,6 +295,10 @@ jarvis-pi/
 ## Non-Functional Requirements
 
 * Must start automatically on boot via systemd
+* Deployment configuration must explicitly define the runtime service account:
+
+  * `jarvis.service` must run as `User=jarvis` and `Group=jarvis`
+  * `install.sh` must create the `jarvis` system user/group if absent (`useradd --system` / `groupadd --system`)
 * Must log to file:
 
   * Motion events
@@ -315,6 +319,21 @@ jarvis-pi/
 * Write logs to:
   `/var/log/jarvis.log`
 * Use structured logging (JSON preferred)
+* `install.sh` must create the log target during install:
+
+  * Ensure parent directory exists
+  * Create `/var/log/jarvis.log` if missing
+  * Set ownership to `jarvis:jarvis`
+  * Set permissions to `0640` (owner read/write, group read, no world access)
+* Rotation expectations:
+
+  * Include a `logrotate` policy (or equivalent) for `jarvis.log`
+  * Recommended baseline: daily rotation, keep 7 files, compress old logs, `copytruncate` if process does not reopen file handles on `SIGHUP`
+* Fallback behavior when `/var/log/jarvis.log` is not writable:
+
+  * Application must automatically fall back to a writable local path (`/tmp/jarvis.log` minimum requirement)
+  * Emit a warning to journald/stdout indicating fallback activation and the active log path
+  * Continue service operation (logging degradation must not crash the main process)
 
 ---
 
