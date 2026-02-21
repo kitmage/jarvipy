@@ -1,2 +1,1 @@
-def test_placeholder_announce_gating() -> None:
-    assert True
+"""ANNOUNCE gating tests will be added in Slice 3."""

@@ -1,2 +1,1 @@
-def test_placeholder_presence_policy() -> None:
-    assert True
+"""Presence policy tests will be added in Slice 4."""

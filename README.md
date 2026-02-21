@@ -1,12 +1,12 @@
 # Jarvis Pi
 
-This repository is currently at **Slice 1** from `AGENT_INSTRUCTIONS.md`.
+This repository is currently at **Slice 2** from `AGENT_INSTRUCTIONS.md`.
 
 ## Current status
-- Scaffolded project structure
-- Added typed environment configuration loader
-- Added structured JSON logging with fallback
-- Added basic startup health checks
+- Slice 1 foundation: typed config, structured logging, startup health checks
+- Implemented motion trigger core logic (6-frame consecutive trigger + cooldown)
+- Implemented object detection interfaces and person/vehicle routing helper
+- Implemented state machine motion routing (`STANDBY` -> `CONVERSATION` or `ANNOUNCE`)
 
 ## Run
 ```bash
