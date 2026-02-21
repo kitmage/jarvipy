@@ -1,0 +1,1 @@
+"""Motion watcher module placeholder."""
