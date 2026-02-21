@@ -16,3 +16,13 @@
 - Replaced placeholder object detection module with normalized `Detection` model, detector protocol, and person/vehicle helper.
 - Upgraded state controller to process motion signals via detector dependency and route to `ANNOUNCE` vs `CONVERSATION`.
 - Added tests for motion trigger behavior, object detection parsing/filtering, and state machine routing decisions.
+
+### Step 3 - ANNOUNCE mode with gating + LLM JSON response + TTS playback
+- Added strict ANNOUNCE LLM JSON parser in `brain/llm.py` (`say` + `priority` validation).
+- Added TTS protocol and in-memory adapter in `audio/tts.py` for deterministic tests.
+- Extended `state/state_machine.py` with `process_announce` gating flow:
+  - quiet-hours suppression
+  - top non-person confidence threshold check
+  - repeated-object-in-window or high-priority gate
+  - invalid LLM JSON fallback to silent skip
+- Added table-driven ANNOUNCE gating tests and LLM JSON robustness tests.
