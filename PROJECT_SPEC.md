@@ -343,6 +343,35 @@ jarvis-pi/
 * Conversation response latency < 3 seconds (excluding network delay)
 * Motion detection must not block audio thread
 
+### Test / Validation
+
+Performance constraints must be validated with repeatable measurement procedures:
+
+* **Idle CPU measurement**
+
+  * Tool: `pidstat -u 1` (from `sysstat`) against the running `jarvis` process.
+  * Sampling window: collect 60 consecutive 1-second samples after a 30-second warm-up while the system remains in `STANDBY` with no motion/audio events.
+  * Report: use the mean `%CPU` across the 60 samples as idle CPU.
+
+* **Conversation latency measurement**
+
+  * Measure per turn using monotonic timestamps emitted in code at these exact timing points:
+
+    * **Start timestamp (`t_start`)**: when final user transcript is emitted from `audio/stt.py` and handed off to the LLM request path.
+    * **LLM first-token timestamp (`t_llm_first`)**: when the first streamed token/chunk is received in `brain/llm.py`.
+    * **TTS-start timestamp (`t_tts_start`)**: when playback of synthesized response audio begins in `audio/tts.py`.
+  * Primary conversation latency metric: `t_tts_start - t_start`.
+  * Diagnostic sub-metric: `t_llm_first - t_start` (to separate LLM time from TTS start delay).
+
+* **Minimum runs and pass/fail thresholds**
+
+  * Idle CPU: run at least **3 independent idle windows** (60s each); pass if each window mean is `< 20%` and overall mean is `< 18%`.
+  * Conversation latency: run at least **30 conversation turns** (minimum 10 turns across each of 3 sessions); pass if:
+
+    * 95th percentile of `t_tts_start - t_start` is `< 3.0s`.
+    * Maximum `t_tts_start - t_start` is `<= 3.5s`.
+    * No missing timing records from `audio/stt.py`, `brain/llm.py`, or `audio/tts.py`.
+
 ---
 
 ## Deliverables
