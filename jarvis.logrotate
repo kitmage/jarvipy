@@ -1,0 +1,8 @@
+/var/log/jarvis.log {
+    daily
+    rotate 7
+    compress
+    copytruncate
+    missingok
+    notifempty
+}
