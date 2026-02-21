@@ -1,0 +1,16 @@
+[Unit]
+Description=Jarvis Pi assistant
+After=network.target
+
+[Service]
+Type=simple
+User=jarvis
+Group=jarvis
+WorkingDirectory=/opt/jarvis-pi
+EnvironmentFile=/opt/jarvis-pi/.env
+ExecStart=/opt/jarvis-pi/.venv/bin/python /opt/jarvis-pi/main.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
