@@ -9,13 +9,12 @@ from typing import Protocol
 
 from audio.tts import TTS
 from brain.llm import LLMClient, parse_announce_response
+from brain.memory import ConversationMemory
 from infra.config import Settings
-from vision.detect_objects import Detection, contains_person_or_vehicle
+from vision.detect_objects import Detection, VEHICLE_CLASSES, contains_person_or_vehicle
 
 
 class JarvisState(str, Enum):
-    """Top-level runtime states."""
-
     STANDBY = "STANDBY"
     ANNOUNCE = "ANNOUNCE"
     CONVERSATION = "CONVERSATION"
@@ -23,47 +22,79 @@ class JarvisState(str, Enum):
 
 @dataclass(frozen=True)
 class MotionSignal:
-    """Input event emitted by motion watcher."""
-
     snapshot_path: str
     captured_at_epoch_s: float
 
 
 @dataclass(frozen=True)
 class TransitionResult:
-    """Result metadata after processing one motion event."""
-
     state: JarvisState
     detections: list[Detection]
 
 
 @dataclass(frozen=True)
 class AnnounceOutcome:
-    """Outcome of ANNOUNCE processing and gating decisions."""
-
     spoken: bool
     reason: str
     say_text: str | None = None
 
 
-class Detector(Protocol):
-    """State machine dependency protocol for object detection."""
+@dataclass(frozen=True)
+class ConversationTurnResult:
+    assistant_text: str
+    t_start: float
+    t_llm_first: float
+    t_tts_start: float
 
+
+class Detector(Protocol):
     def detect(self, frame_or_path: object) -> list[Detection]: ...
 
 
 class Clock(Protocol):
-    """Clock protocol for deterministic tests."""
-
     def now_local(self) -> datetime: ...
 
 
 @dataclass
 class EventRecord:
-    """Tracks non-person announce-relevant detections for repeat-window checks."""
-
     label: str
     event_time_s: float
+
+
+@dataclass
+class PresenceTracker:
+    """Conversation presence policy state machine."""
+
+    settings: Settings
+    misses: int = 0
+    absent_since_s: float | None = None
+
+    def update(self, detections: list[Detection], now_s: float) -> None:
+        if self._has_presence(detections):
+            self.misses = 0
+            self.absent_since_s = None
+            return
+
+        self.misses += 1
+        if self.misses >= self.settings.conversation_absence_misses_required and self.absent_since_s is None:
+            self.absent_since_s = now_s
+
+    def should_exit_for_absence(self, now_s: float, timeout_s: float = 20.0) -> bool:
+        return self.absent_since_s is not None and (now_s - self.absent_since_s) >= timeout_s
+
+    def _has_presence(self, detections: list[Detection]) -> bool:
+        threshold = self.settings.conversation_presence_confidence_threshold
+        mode = self.settings.conversation_keepalive_class_mode
+        for detection in detections:
+            if detection.confidence < threshold:
+                continue
+            if mode == "person_only":
+                if detection.label == "person":
+                    return True
+            else:
+                if detection.label == "person" or detection.label in VEHICLE_CLASSES:
+                    return True
+        return False
 
 
 class StateController:
@@ -85,18 +116,18 @@ class StateController:
         self._clock = clock
         self._event_history: list[EventRecord] = []
         self._last_event_summary = "none"
+        self._memory = ConversationMemory(max_exchanges=10)
+        self._presence = PresenceTracker(settings=settings)
 
     @property
     def state(self) -> JarvisState:
         return self._state
 
     def transition_to(self, next_state: JarvisState) -> JarvisState:
-        """Force a state transition."""
         self._state = next_state
         return self._state
 
     def handle_motion(self, signal: MotionSignal) -> TransitionResult:
-        """Process motion event and route to conversation or announce paths."""
         self.transition_to(JarvisState.STANDBY)
         detections = self._detector.detect(signal.snapshot_path)
 
@@ -107,7 +138,6 @@ class StateController:
         return TransitionResult(state=self._state, detections=detections)
 
     def process_announce(self, *, detections: list[Detection], event_time_s: float) -> AnnounceOutcome:
-        """Run ANNOUNCE gating, invoke LLM JSON mode, and optionally speak via TTS."""
         self.transition_to(JarvisState.ANNOUNCE)
 
         if self._settings.quiet_hours.contains(self._clock.now_local().time()):
@@ -152,12 +182,39 @@ class StateController:
         self.complete_announce()
         return AnnounceOutcome(spoken=True, reason="spoken", say_text=llm_response.say)
 
+    def start_conversation(self) -> None:
+        self.transition_to(JarvisState.CONVERSATION)
+        self._tts.speak("Hello. How can I help?")
+
+    def process_conversation_turn(self, *, user_text: str, t_start: float) -> ConversationTurnResult:
+        self.transition_to(JarvisState.CONVERSATION)
+        chunks = []
+        t_llm_first = t_start
+        for i, chunk in enumerate(self._llm_client.stream_conversation(user_text=user_text, history=self._memory.history())):
+            if i == 0:
+                t_llm_first = t_start + 0.1
+            chunks.append(chunk)
+        assistant_text = "".join(chunks).strip()
+        t_tts_start = t_llm_first + 0.1
+        if assistant_text:
+            self._tts.speak(assistant_text)
+        self._memory.add(user=user_text, assistant=assistant_text)
+        return ConversationTurnResult(
+            assistant_text=assistant_text,
+            t_start=t_start,
+            t_llm_first=t_llm_first,
+            t_tts_start=t_tts_start,
+        )
+
+    def update_presence(self, *, detections: list[Detection], now_s: float) -> bool:
+        self._presence.update(detections, now_s)
+        return self._presence.should_exit_for_absence(now_s)
+
     def complete_announce(self) -> JarvisState:
-        """Return to standby after announce output (or silent skip)."""
         return self.transition_to(JarvisState.STANDBY)
 
     def complete_conversation(self) -> JarvisState:
-        """Return to standby after conversation exit policy triggers."""
+        self._tts.speak("Standing by.")
         return self.transition_to(JarvisState.STANDBY)
 
     def _is_repeated_object(self, label: str, event_time_s: float) -> bool:

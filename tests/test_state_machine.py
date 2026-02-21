@@ -18,6 +18,10 @@ class StubLLM:
     def complete_announce(self, *, objects: list[str], local_time: str, previous_event_summary: str) -> str:
         return '{"say":"Noted.","priority":"high"}'
 
+    def stream_conversation(self, *, user_text: str, history):
+        yield "I can"
+        yield " help."
+
 
 @dataclass
 class StubClock:
@@ -38,24 +42,40 @@ class StubTTS:
         return None
 
 
-def make_controller(detections: list[Detection]) -> StateController:
-    return StateController(
-        detector=StubDetector(detections),
-        settings=Settings(),
-        llm_client=StubLLM(),
-        tts=StubTTS(),
-        clock=StubClock(datetime(2024, 1, 1, 12, 0, 0)),
+def make_controller(detections: list[Detection]) -> tuple[StateController, StubTTS]:
+    tts = StubTTS()
+    return (
+        StateController(
+            detector=StubDetector(detections),
+            settings=Settings(),
+            llm_client=StubLLM(),
+            tts=tts,
+            clock=StubClock(datetime(2024, 1, 1, 12, 0, 0)),
+        ),
+        tts,
     )
 
 
 def test_state_machine_transitions_to_conversation_on_person_or_vehicle() -> None:
-    controller = make_controller([Detection("person", 0.9, (0, 0, 1, 1))])
+    controller, _ = make_controller([Detection("person", 0.9, (0, 0, 1, 1))])
     result = controller.handle_motion(MotionSignal(snapshot_path="/tmp/x.jpg", captured_at_epoch_s=1.0))
     assert result.state == JarvisState.CONVERSATION
 
 
 def test_state_machine_transitions_to_announce_for_non_person_vehicle() -> None:
-    controller = make_controller([Detection("cat", 0.9, (0, 0, 1, 1))])
+    controller, _ = make_controller([Detection("cat", 0.9, (0, 0, 1, 1))])
     result = controller.handle_motion(MotionSignal(snapshot_path="/tmp/x.jpg", captured_at_epoch_s=1.0))
     assert result.state == JarvisState.ANNOUNCE
     assert controller.complete_announce() == JarvisState.STANDBY
+
+
+def test_conversation_turn_streams_to_tts_and_tracks_timestamps() -> None:
+    controller, tts = make_controller([Detection("person", 0.9, (0, 0, 1, 1))])
+    controller.start_conversation()
+    result = controller.process_conversation_turn(user_text="status", t_start=1.0)
+
+    assert result.assistant_text == "I can help."
+    assert result.t_llm_first >= result.t_start
+    assert result.t_tts_start >= result.t_llm_first
+    assert tts.spoken[0] == "Hello. How can I help?"
+    assert tts.spoken[1] == "I can help."

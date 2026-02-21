@@ -26,3 +26,19 @@
   - repeated-object-in-window or high-priority gate
   - invalid LLM JSON fallback to silent skip
 - Added table-driven ANNOUNCE gating tests and LLM JSON robustness tests.
+
+### Step 4 - CONVERSATION mode (VAD/STT/LLM/TTS streaming) + presence policy
+- Implemented `ConversationMemory` with rolling max-10 exchange truncation in `brain/memory.py`.
+- Added VAD/STT streaming contracts in `audio/vad.py` and `audio/stt.py`.
+- Extended LLM contract with streaming conversation support in `brain/llm.py`.
+- Extended `StateController` with conversation methods:
+  - `start_conversation()` greeting
+  - `process_conversation_turn()` with LLM chunk streaming aggregation, TTS output, and turn timing fields (`t_start`, `t_llm_first`, `t_tts_start`)
+- Added `PresenceTracker` with configurable confidence threshold, misses-required counting, keepalive mode handling (`person_or_vehicle` / `person_only`), and 20-second absence exit condition.
+- Added tests for memory truncation, deterministic presence policy timeline, keepalive-mode behavior, and conversation turn integration.
+
+### Step 5 - Resilience and recovery behavior
+- Added explicit recoverable exception classes for camera, LLM, and audio device failures in `infra/errors.py`.
+- Implemented retry/backoff primitives in `infra/recovery.py` with bounded exponential backoff and recoverable-error filtering.
+- Extended `main.py` with a resilient subsystem cycle that retries camera/audio/llm ticks and logs recoverable exhaustion without crashing startup.
+- Added fault-injection resilience tests validating transient recovery, retry exhaustion behavior, and per-subsystem retry in `run_resilient_cycle`.

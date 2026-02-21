@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Iterable, Protocol
+
+from brain.memory import Exchange
 
 
 @dataclass(frozen=True)
@@ -19,6 +21,8 @@ class LLMClient(Protocol):
     """Protocol for LLM operations."""
 
     def complete_announce(self, *, objects: list[str], local_time: str, previous_event_summary: str) -> str: ...
+
+    def stream_conversation(self, *, user_text: str, history: list[Exchange]) -> Iterable[str]: ...
 
 
 def parse_announce_response(raw_response: str) -> AnnounceLLMResponse:
