@@ -7,3 +7,15 @@ class JarvisError(Exception):
 
 class HealthCheckFailed(JarvisError):
     """Raised when startup health checks fail."""
+
+
+class CameraDisconnectedError(JarvisError):
+    """Raised for transient camera disconnects."""
+
+
+class LLMServiceError(JarvisError):
+    """Raised for transient LLM API failures or timeouts."""
+
+
+class AudioDeviceUnavailableError(JarvisError):
+    """Raised when microphone or speaker device initialization fails."""
