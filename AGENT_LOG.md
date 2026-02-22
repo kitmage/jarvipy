@@ -42,3 +42,8 @@
 - Implemented retry/backoff primitives in `infra/recovery.py` with bounded exponential backoff and recoverable-error filtering.
 - Extended `main.py` with a resilient subsystem cycle that retries camera/audio/llm ticks and logs recoverable exhaustion without crashing startup.
 - Added fault-injection resilience tests validating transient recovery, retry exhaustion behavior, and per-subsystem retry in `run_resilient_cycle`.
+
+### Step 6 - Install/deploy artifacts (systemd, install.sh, logrotate)
+- Implemented `install.sh` with package install, venv setup, `jarvis` user/group creation, log file provisioning (`/var/log/jarvis.log` with `0640`), service/logrotate install, and systemd enable/restart.
+- Kept deployment-specific details in deployment artifacts and out of application business logic.
+- Added deployment artifact tests to verify required directives and policies in `jarvis.service`, `jarvis.logrotate`, and `install.sh`.
