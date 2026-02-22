@@ -43,7 +43,12 @@
 - Extended `main.py` with a resilient subsystem cycle that retries camera/audio/llm ticks and logs recoverable exhaustion without crashing startup.
 - Added fault-injection resilience tests validating transient recovery, retry exhaustion behavior, and per-subsystem retry in `run_resilient_cycle`.
 
-### Step 6 - Install/deploy artifacts (systemd, install.sh, logrotate)
-- Implemented `install.sh` with package install, venv setup, `jarvis` user/group creation, log file provisioning (`/var/log/jarvis.log` with `0640`), service/logrotate install, and systemd enable/restart.
-- Kept deployment-specific details in deployment artifacts and out of application business logic.
-- Added deployment artifact tests to verify required directives and policies in `jarvis.service`, `jarvis.logrotate`, and `install.sh`.
+### Step 6 - Install/deploy artifacts (AGENT_INSTRUCTIONS 12.1)
+- Implemented `install.sh` with an idempotent end-to-end deployment flow replacing the placeholder.
+- Added root guard and OS package installation via `apt-get` (Python venv/pip and runtime helpers).
+- Added creation/validation of `jarvis` system group and user accounts.
+- Added application sync into `/opt/jarvis-pi` (configurable via `INSTALL_DIR`) with ownership correction.
+- Added venv bootstrap and dependency installation from `requirements.txt`.
+- Added `/var/log/jarvis.log` creation with required ownership (`jarvis:jarvis`) and permissions (`0640`).
+- Added installation of `jarvis.service` and `jarvis.logrotate`, with service path rewriting to the active install directory.
+- Added `systemctl daemon-reload`, `enable`, and `restart` steps to complete activation.
