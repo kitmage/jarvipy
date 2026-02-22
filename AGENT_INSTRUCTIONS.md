@@ -330,3 +330,41 @@ The implementation is complete when all are true:
 - Structured logging + fallback path implemented.
 - Performance scripts produce pass/fail outputs per spec.
 - README enables a clean setup by a new operator.
+
+---
+
+## 12) Pre-Deployment Completion Steps (Repo Review)
+
+Based on current repository status (`README` indicates Slice 5), the following steps must be completed before production deployment:
+
+1. **Finish deployment automation (`install.sh`)**
+   - Replace placeholder logic with full installer flow:
+     - install required OS packages,
+     - create `jarvis` system group/user if absent,
+     - create Python virtualenv and install `requirements.txt`,
+     - create and permission `/var/log/jarvis.log` (`jarvis:jarvis`, `0640`),
+     - install/copy `jarvis.service` and `jarvis.logrotate`,
+     - run daemon reload + enable/restart service.
+
+2. **Complete performance validation tooling**
+   - Implement `scripts/validate_idle_cpu.sh` per spec (30s warm-up, 60 samples/run, 3 runs, per-run + overall mean).
+   - Implement `scripts/validate_latency.py` to parse timing triplets and enforce pass/fail criteria (p95 < 3.0s, max <= 3.5s, no missing records).
+
+3. **Close Slice 6/7 documentation and operator runbook gaps**
+   - Expand `README.md` to include full setup + deployment documentation required in Section 10:
+     - hardware/OS deps,
+     - model downloads (TFLite/Vosk/Piper),
+     - `.env` reference,
+     - systemd deployment + operations,
+     - logging + fallback behavior,
+     - validation commands and thresholds,
+     - troubleshooting and known limitations.
+
+4. **Execute and record all quality/performance gates before release**
+   - Run required code-quality/tests (`ruff`, `black --check`, `mypy`, `pytest -q`, smoke test).
+   - Run additional release gates: simulated end-to-end transitions, Raspberry Pi device sanity run, service reboot persistence check.
+   - Run performance validation scripts and archive evidence/results for release sign-off.
+
+5. **Verify release readiness against Definition of Done**
+   - Confirm all Section 11 criteria are demonstrably satisfied (module wiring, ANNOUNCE gating, streaming conversation + barge-in, presence policy, resilience, deploy artifacts, logging fallback, performance outputs, complete README).
+   - Resolve any remaining TODO placeholders before tagging a deployable release.
