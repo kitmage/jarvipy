@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Iterable
 
 import pytest
 
+from brain.memory import Exchange
 from infra.config import Settings
 from state.state_machine import AnnounceOutcome, StateController
 from vision.detect_objects import Detection
@@ -17,8 +19,15 @@ class StubLLM:
     def __init__(self, response: str) -> None:
         self.response = response
 
-    def complete_announce(self, *, objects: list[str], local_time: str, previous_event_summary: str) -> str:
+    def complete_announce(
+        self, *, objects: list[str], local_time: str, previous_event_summary: str
+    ) -> str:
         return self.response
+
+    def stream_conversation(
+        self, *, user_text: str, history: list[Exchange]
+    ) -> Iterable[str]:
+        return iter(())
 
 
 class StubTTS:
@@ -40,7 +49,9 @@ class StubClock:
         return self.now
 
 
-def make_controller(*, settings: Settings, llm_response: str, now: datetime) -> tuple[StateController, StubTTS]:
+def make_controller(
+    *, settings: Settings, llm_response: str, now: datetime
+) -> tuple[StateController, StubTTS]:
     tts = StubTTS()
     controller = StateController(
         detector=StubDetector(),
@@ -91,7 +102,9 @@ def test_announce_gating_failures(
         announce_min_confidence=0.60,
         announce_repeat_window_seconds=30,
     )
-    controller, tts = make_controller(settings=settings, llm_response=llm_response, now=now)
+    controller, tts = make_controller(
+        settings=settings, llm_response=llm_response, now=now
+    )
     outcome = controller.process_announce(detections=detections, event_time_s=100.0)
     assert outcome.reason == expected_reason
     assert outcome.spoken is expected_spoken
@@ -114,7 +127,9 @@ def test_announce_gating_passes_on_repeated_object_with_normal_priority() -> Non
         event_time_s=120.0,
     )
     assert first.spoken is False
-    assert second == AnnounceOutcome(spoken=True, reason="spoken", say_text="The cat is back.")
+    assert second == AnnounceOutcome(
+        spoken=True, reason="spoken", say_text="The cat is back."
+    )
     assert tts.spoken == ["The cat is back."]
 
 

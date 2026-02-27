@@ -5,7 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Protocol, TypeVar
 
-from infra.errors import AudioDeviceUnavailableError, CameraDisconnectedError, LLMServiceError
+from infra.errors import (
+    AudioDeviceUnavailableError,
+    CameraDisconnectedError,
+    LLMServiceError,
+)
 
 T = TypeVar("T")
 
@@ -49,7 +53,11 @@ def retry_operation(
     raise last_error
 
 
-RECOVERABLE_ERRORS = (CameraDisconnectedError, LLMServiceError, AudioDeviceUnavailableError)
+RECOVERABLE_ERRORS = (
+    CameraDisconnectedError,
+    LLMServiceError,
+    AudioDeviceUnavailableError,
+)
 
 
 def is_recoverable_error(exc: Exception) -> bool:

@@ -76,11 +76,17 @@ class PresenceTracker:
             return
 
         self.misses += 1
-        if self.misses >= self.settings.conversation_absence_misses_required and self.absent_since_s is None:
+        if (
+            self.misses >= self.settings.conversation_absence_misses_required
+            and self.absent_since_s is None
+        ):
             self.absent_since_s = now_s
 
     def should_exit_for_absence(self, now_s: float, timeout_s: float = 20.0) -> bool:
-        return self.absent_since_s is not None and (now_s - self.absent_since_s) >= timeout_s
+        return (
+            self.absent_since_s is not None
+            and (now_s - self.absent_since_s) >= timeout_s
+        )
 
     def _has_presence(self, detections: list[Detection]) -> bool:
         threshold = self.settings.conversation_presence_confidence_threshold
@@ -137,7 +143,9 @@ class StateController:
             self.transition_to(JarvisState.ANNOUNCE)
         return TransitionResult(state=self._state, detections=detections)
 
-    def process_announce(self, *, detections: list[Detection], event_time_s: float) -> AnnounceOutcome:
+    def process_announce(
+        self, *, detections: list[Detection], event_time_s: float
+    ) -> AnnounceOutcome:
         self.transition_to(JarvisState.ANNOUNCE)
 
         if self._settings.quiet_hours.contains(self._clock.now_local().time()):
@@ -178,7 +186,9 @@ class StateController:
 
         self._tts.speak(llm_response.say)
         self._record_event(detections, event_time_s)
-        self._last_event_summary = f"spoke:{top_non_person.label}:{top_non_person.confidence:.2f}"
+        self._last_event_summary = (
+            f"spoke:{top_non_person.label}:{top_non_person.confidence:.2f}"
+        )
         self.complete_announce()
         return AnnounceOutcome(spoken=True, reason="spoken", say_text=llm_response.say)
 
@@ -186,11 +196,17 @@ class StateController:
         self.transition_to(JarvisState.CONVERSATION)
         self._tts.speak("Hello. How can I help?")
 
-    def process_conversation_turn(self, *, user_text: str, t_start: float) -> ConversationTurnResult:
+    def process_conversation_turn(
+        self, *, user_text: str, t_start: float
+    ) -> ConversationTurnResult:
         self.transition_to(JarvisState.CONVERSATION)
         chunks = []
         t_llm_first = t_start
-        for i, chunk in enumerate(self._llm_client.stream_conversation(user_text=user_text, history=self._memory.history())):
+        for i, chunk in enumerate(
+            self._llm_client.stream_conversation(
+                user_text=user_text, history=self._memory.history()
+            )
+        ):
             if i == 0:
                 t_llm_first = t_start + 0.1
             chunks.append(chunk)
@@ -229,9 +245,13 @@ class StateController:
     def _record_event(self, detections: list[Detection], event_time_s: float) -> None:
         non_person_labels = {d.label for d in detections if d.label != "person"}
         for label in non_person_labels:
-            self._event_history.append(EventRecord(label=label, event_time_s=event_time_s))
+            self._event_history.append(
+                EventRecord(label=label, event_time_s=event_time_s)
+            )
         min_keep = event_time_s - self._settings.announce_repeat_window_seconds
-        self._event_history = [event for event in self._event_history if event.event_time_s >= min_keep]
+        self._event_history = [
+            event for event in self._event_history if event.event_time_s >= min_keep
+        ]
         if detections:
             top = max(detections, key=lambda item: item.confidence)
             self._last_event_summary = f"seen:{top.label}:{top.confidence:.2f}"

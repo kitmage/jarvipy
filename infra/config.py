@@ -76,11 +76,15 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         quiet_hours_start=source.get("QUIET_HOURS_START", "22:00"),
         quiet_hours_end=source.get("QUIET_HOURS_END", "07:00"),
         announce_min_confidence=float(source.get("ANNOUNCE_MIN_CONFIDENCE", 0.60)),
-        announce_repeat_window_seconds=int(source.get("ANNOUNCE_REPEAT_WINDOW_SECONDS", 30)),
+        announce_repeat_window_seconds=int(
+            source.get("ANNOUNCE_REPEAT_WINDOW_SECONDS", 30)
+        ),
         conversation_presence_confidence_threshold=float(
             source.get("CONVERSATION_PRESENCE_CONFIDENCE_THRESHOLD", 0.65)
         ),
-        conversation_absence_misses_required=int(source.get("CONVERSATION_ABSENCE_MISSES_REQUIRED", 3)),
+        conversation_absence_misses_required=int(
+            source.get("CONVERSATION_ABSENCE_MISSES_REQUIRED", 3)
+        ),
         conversation_keepalive_class_mode=source.get(
             "CONVERSATION_KEEPALIVE_CLASS_MODE", "person_or_vehicle"
         ),
@@ -96,7 +100,9 @@ def _parse_hhmm(value: str) -> time:
     hour = int(parts[0])
     minute = int(parts[1])
     if hour < 0 or hour > 23 or minute < 0 or minute > 59:
-        raise ValueError(f"Invalid time value '{value}', expected HH:MM in 24-hour range")
+        raise ValueError(
+            f"Invalid time value '{value}', expected HH:MM in 24-hour range"
+        )
     return time(hour=hour, minute=minute)
 
 
@@ -113,7 +119,12 @@ def _validate(settings: Settings) -> None:
         raise ValueError("CONVERSATION_PRESENCE_CONFIDENCE_THRESHOLD must be in [0, 1]")
     if settings.conversation_absence_misses_required <= 0:
         raise ValueError("CONVERSATION_ABSENCE_MISSES_REQUIRED must be positive")
-    if settings.conversation_keepalive_class_mode not in {"person_or_vehicle", "person_only"}:
-        raise ValueError("CONVERSATION_KEEPALIVE_CLASS_MODE must be person_or_vehicle or person_only")
+    if settings.conversation_keepalive_class_mode not in {
+        "person_or_vehicle",
+        "person_only",
+    }:
+        raise ValueError(
+            "CONVERSATION_KEEPALIVE_CLASS_MODE must be person_or_vehicle or person_only"
+        )
     _parse_hhmm(settings.quiet_hours_start)
     _parse_hhmm(settings.quiet_hours_end)
