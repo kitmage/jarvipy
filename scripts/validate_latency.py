@@ -72,6 +72,10 @@ def extract_samples(log_path: Path) -> tuple[list[LatencySample], int]:
             missing_records += 1
             continue
 
+        if not (t_start <= t_llm_first <= t_tts_start):
+            missing_records += 1
+            continue
+
         samples.append(
             LatencySample(
                 t_start=t_start, t_llm_first=t_llm_first, t_tts_start=t_tts_start
