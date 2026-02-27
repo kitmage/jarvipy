@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from typing import Callable
 
 from infra.config import load_dotenv, load_settings
-from infra.errors import AudioDeviceUnavailableError, CameraDisconnectedError, LLMServiceError
+from infra.errors import (
+    AudioDeviceUnavailableError,
+    CameraDisconnectedError,
+    LLMServiceError,
+)
 from infra.logging import get_logger
 from infra.recovery import BackoffPolicy, is_recoverable_error, retry_operation
 
@@ -28,7 +32,10 @@ def run_startup_health_checks() -> tuple[bool, dict[str, bool]]:
         load_settings()
         checks["config_loadable"] = True
         logger = get_logger()
-        logger.info("startup health checks completed", extra={"event_type": "health_check", "metadata": checks})
+        logger.info(
+            "startup health checks completed",
+            extra={"event_type": "health_check", "metadata": checks},
+        )
         checks["logger_writable"] = True
     except Exception:
         return False, checks
@@ -46,7 +53,10 @@ def run_resilient_cycle(subsystems: Subsystems) -> None:
             backoff=BackoffPolicy(base_seconds=0.01, factor=2.0, max_seconds=0.05),
             sleeper=lambda _: None,
         )
-        get_logger().info("subsystem tick ok", extra={"event_type": "subsystem_ok", "metadata": {"name": name}})
+        get_logger().info(
+            "subsystem tick ok",
+            extra={"event_type": "subsystem_ok", "metadata": {"name": name}},
+        )
 
     run_with_retry("camera", subsystems.camera_tick)
     run_with_retry("audio", subsystems.audio_tick)
@@ -72,17 +82,26 @@ def main() -> int:
     ok, checks = run_startup_health_checks()
     logger = get_logger()
     if not ok:
-        logger.error("startup health checks failed", extra={"event_type": "health_check", "metadata": checks})
+        logger.error(
+            "startup health checks failed",
+            extra={"event_type": "health_check", "metadata": checks},
+        )
         return 1
 
     try:
         run_resilient_cycle(default_subsystems())
-    except (CameraDisconnectedError, AudioDeviceUnavailableError, LLMServiceError) as exc:
+    except (
+        CameraDisconnectedError,
+        AudioDeviceUnavailableError,
+        LLMServiceError,
+    ) as exc:
         logger.error(
             "recoverable subsystem exhausted retries",
             extra={"event_type": "recovery_exhausted", "metadata": {"error": str(exc)}},
         )
-    logger.info("jarvis initialized", extra={"event_type": "startup", "metadata": checks})
+    logger.info(
+        "jarvis initialized", extra={"event_type": "startup", "metadata": checks}
+    )
     return 0
 
 

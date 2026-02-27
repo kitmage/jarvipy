@@ -20,9 +20,13 @@ class AnnounceLLMResponse:
 class LLMClient(Protocol):
     """Protocol for LLM operations."""
 
-    def complete_announce(self, *, objects: list[str], local_time: str, previous_event_summary: str) -> str: ...
+    def complete_announce(
+        self, *, objects: list[str], local_time: str, previous_event_summary: str
+    ) -> str: ...
 
-    def stream_conversation(self, *, user_text: str, history: list[Exchange]) -> Iterable[str]: ...
+    def stream_conversation(
+        self, *, user_text: str, history: list[Exchange]
+    ) -> Iterable[str]: ...
 
 
 def parse_announce_response(raw_response: str) -> AnnounceLLMResponse:
@@ -36,6 +40,8 @@ def parse_announce_response(raw_response: str) -> AnnounceLLMResponse:
     if not isinstance(say, str) or not say.strip():
         raise ValueError("ANNOUNCE response field 'say' must be a non-empty string")
     if priority not in {"normal", "high"}:
-        raise ValueError("ANNOUNCE response field 'priority' must be 'normal' or 'high'")
+        raise ValueError(
+            "ANNOUNCE response field 'priority' must be 'normal' or 'high'"
+        )
 
     return AnnounceLLMResponse(say=say.strip(), priority=priority)

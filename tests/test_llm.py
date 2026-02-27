@@ -12,10 +12,10 @@ def test_parse_announce_response_accepts_strict_json() -> None:
 @pytest.mark.parametrize(
     "raw",
     [
-        'not json',
+        "not json",
         '{"say":"", "priority":"normal"}',
         '{"say":"ok", "priority":"urgent"}',
-        '[1,2,3]',
+        "[1,2,3]",
         '{"priority":"high"}',
     ],
 )

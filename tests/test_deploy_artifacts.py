@@ -21,9 +21,9 @@ def test_logrotate_has_required_policy() -> None:
 
 def test_install_script_contains_required_setup_steps() -> None:
     content = Path("install.sh").read_text()
-    assert "groupadd --system jarvis" in content
+    assert "groupadd --system" in content
     assert "useradd --system" in content
-    assert "touch \"${LOG_FILE}\"" in content
-    assert "chmod 0640 \"${LOG_FILE}\"" in content
-    assert "systemctl enable \"${SERVICE_NAME}\"" in content
-    assert "systemctl restart \"${SERVICE_NAME}\"" in content
+    assert 'touch "${LOG_FILE}"' in content
+    assert 'chmod 0640 "${LOG_FILE}"' in content
+    assert 'systemctl enable "${SERVICE_NAME}"' in content
+    assert 'systemctl restart "${SERVICE_NAME}"' in content

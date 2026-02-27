@@ -52,3 +52,10 @@
 - Added `/var/log/jarvis.log` creation with required ownership (`jarvis:jarvis`) and permissions (`0640`).
 - Added installation of `jarvis.service` and `jarvis.logrotate`, with service path rewriting to the active install directory.
 - Added `systemctl daemon-reload`, `enable`, and `restart` steps to complete activation.
+
+### Step 7 - Performance instrumentation + validation scripts + docs hardening
+- Implemented `scripts/validate_idle_cpu.sh` with Slice 7 requirements (30s warmup, 3 runs, 60 samples per run, per-run + overall means).
+- Implemented `scripts/validate_latency.py` to parse structured log timing triplets and enforce p95/max/missing-record pass criteria.
+- Expanded README into an operator-focused runbook covering prerequisites, setup, deployment, logging, validation gates, and troubleshooting.
+- Updated deployment test expectations to validate required install semantics while allowing variable-based script composition.
+- Added performance validation tests for idle CPU script requirements and latency validation pass/fail behavior.
