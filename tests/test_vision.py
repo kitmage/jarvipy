@@ -31,7 +31,9 @@ class FakeInterpreter:
 
 
 def test_object_detector_filters_by_confidence() -> None:
-    detector = ObjectDetector(FakeInterpreter(), labels={1: "cat", 2: "person"}, min_confidence=0.5)
+    detector = ObjectDetector(
+        FakeInterpreter(), labels={1: "cat", 2: "person"}, min_confidence=0.5
+    )
     detections = detector.detect(image_tensor=[[0]])
     assert len(detections) == 1
     assert detections[0].label == "cat"

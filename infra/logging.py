@@ -26,7 +26,9 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False)
 
 
-def get_logger(name: str = "jarvis", primary_path: str = "/var/log/jarvis.log") -> logging.Logger:
+def get_logger(
+    name: str = "jarvis", primary_path: str = "/var/log/jarvis.log"
+) -> logging.Logger:
     """Configure and return a structured application logger."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
@@ -39,7 +41,9 @@ def get_logger(name: str = "jarvis", primary_path: str = "/var/log/jarvis.log") 
         handler = logging.FileHandler(primary_path)
     except (OSError, PermissionError):
         fallback = "/tmp/jarvis.log"
-        print(f"[jarvis] warning: cannot open {primary_path}; falling back to {fallback}")
+        print(
+            f"[jarvis] warning: cannot open {primary_path}; falling back to {fallback}"
+        )
         Path(fallback).parent.mkdir(parents=True, exist_ok=True)
         handler = logging.FileHandler(fallback)
 

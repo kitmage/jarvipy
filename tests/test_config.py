@@ -21,3 +21,13 @@ def test_quiet_hours_cross_midnight() -> None:
 def test_invalid_confidence_raises() -> None:
     with pytest.raises(ValueError):
         load_settings({"ANNOUNCE_MIN_CONFIDENCE": "1.2"})
+
+
+def test_load_settings_parses_runtime_mock_mode_bool() -> None:
+    settings = load_settings({"JARVIS_MOCK_MODE": "false"})
+    assert settings.runtime_mock_mode is False
+
+
+def test_load_settings_invalid_runtime_mock_mode_raises() -> None:
+    with pytest.raises(ValueError):
+        load_settings({"JARVIS_MOCK_MODE": "notabool"})

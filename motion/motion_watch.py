@@ -88,7 +88,9 @@ class MotionWatcher:
             cooldown_seconds=cooldown_seconds,
         )
 
-    def process_contour_area(self, contour_area: float, now_s: float | None = None) -> bool:
+    def process_contour_area(
+        self, contour_area: float, now_s: float | None = None
+    ) -> bool:
         """Test hook for non-OpenCV environments."""
         timestamp = now_s if now_s is not None else self._now_s()
         return self._trigger.update(contour_area=contour_area, now_s=timestamp)
@@ -116,14 +118,20 @@ class MotionWatcher:
             frame_delta = cv2.absdiff(self._background, blur)
             thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
             thresh = cv2.dilate(thresh, None, iterations=2)
-            contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            contour_area = max((cv2.contourArea(contour) for contour in contours), default=0.0)
+            contours, _ = cv2.findContours(
+                thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
+            contour_area = max(
+                (cv2.contourArea(contour) for contour in contours), default=0.0
+            )
 
             if not self.process_contour_area(contour_area=contour_area):
                 return None
 
             snapshot_path = self._save_snapshot(frame)
-            return MotionEvent(captured_at_epoch_s=self._now_s(), snapshot_path=snapshot_path)
+            return MotionEvent(
+                captured_at_epoch_s=self._now_s(), snapshot_path=snapshot_path
+            )
         finally:
             capture.release()
 
